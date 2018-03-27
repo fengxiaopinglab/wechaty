@@ -1,6 +1,6 @@
 
 下载项目
-git clone https://gitee.com/liuchaoxue/lena.git
+https://github.com/fengxiaopinglab/wechaty.git
 
 安装依赖：
 
