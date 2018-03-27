@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+    <title>Login</title>
+    <script src="/av-min.js"></script>
+    <link rel="stylesheet" href="/stylesheets/index.css">
+    <style>
+        .SignInInput {
+            width: 30%;
+            padding-top: 30px;
+            margin: auto;
+        }
+
+        .SignInButton {
+            width: 50%;
+            margin-left: 25%;
+        }
+
+        el-input {
+            height: 50px !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+
+    <div class="SignInInput ">
+
+        <el-input
+                placeholder="用户名"
+                v-model="username" size="large">
+        </el-input>
+    </div>
+
+    <div class="SignInInput ">
+        <el-input type="password"
+                placeholder="密码"
+                v-model="password">
+        </el-input>
+    </div>
+
+    <div class="SignInInput ">
+        <el-button type="primary" class="SignInButton" @click="login(username,password)">登录</el-button>
+    </div>
+
+</div>
+
+<!-- import Vue before Element -->
+<script src="/vue.js"></script>
+<!-- import JavaScript -->
+<script src="/element-ui.js"></script>
+<script>
+    var APP_ID = 'Fkzb7L2WiB44NrsqMpLKLEt0-gzGzoHsz';
+    var APP_KEY = 'Ima5vySr5IH0AWedIv2YYw3M';
+
+    AV.init({
+        appId: APP_ID,
+        appKey: APP_KEY
+    });
+
+
+    var Rooms = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                username: '',
+                password: ''
+            }
+        },
+        methods: {
+            login: function (username, password) {
+                var self = this
+                AV.User.logIn(username, password).then(function (loginedUser) {
+                    window.location.href = document.referrer;
+                }, function (error) {
+                    console.log(self)
+                    self.$message({
+                        showClose: true,
+                        message: '请检查输入信息',
+                        type: 'error'
+                    });
+                });
+            }
+        }
+    })
+
+</script>
+
+</body>
+</html>

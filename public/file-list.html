@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+    <title>Group</title>
+    <script src="./av-min.js"></script>
+    <link rel="stylesheet" href="./stylesheets/index.css">
+
+    <style>
+        .SignInInput {
+            width: 30%;
+            padding-top: 30px;
+            margin: auto;
+        }
+
+        .SignInButton {
+            width: 50%;
+            margin-left: 25%;
+        }
+
+        el-input {
+            height: 50px !important;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+
+
+    <el-dialog
+            title="登录"
+            :visible.sync="dialogVisible"
+            :fullscreen=true
+            :show-close=false
+            :close-on-press-escape=false
+            width="100%">
+        <div class="SignInInput ">
+
+            <el-input
+                    placeholder="用户名"
+                    v-model="username" size="large">
+            </el-input>
+        </div>
+
+        <div class="SignInInput ">
+            <el-input type="password"
+                      placeholder="密码"
+                      v-model="password">
+            </el-input>
+        </div>
+
+        <div class="SignInInput ">
+            <el-button type="primary" class="SignInButton" @click="login(username,password)">登录</el-button>
+        </div>
+
+    </el-dialog>
+
+
+
+    <el-row type="flex" class="row-bg" justify="space-between">
+        <el-col :span="6">
+            <div class="grid-content bg-purple">群名称： {{roomName}} </div>
+        </el-col>
+        <el-col :span="6">
+            <div class="grid-content bg-purple">
+                <el-button type="text" @click="logout">登出</el-button>
+            </div>
+        </el-col>
+    </el-row>
+    <el-tabs v-model="activeName" type="border-card" @tab-click="handleClick">
+        <el-tab-pane label="文件列表" name="group">
+            <el-row>
+                <el-col :span="24" v-for="(o, index) in fileTableData">
+                    <el-card :body-style="{ padding: '0px' }">
+                        <a :href="o.attributes.file.attributes.url">
+                            <img :src="o.attributes.file.thumbnailURL(100, 100)" class="image">
+                        </a>
+                        <div style="padding: 14px;">
+                            <span>{{o.attributes.file.attributes.name}}</span>
+                            <div class="bottom clearfix">
+                                {{'类型：'+o.attributes.type}}
+                            </div>
+                        </div>
+                    </el-card>
+                </el-col>
+            </el-row>
+            <div id="infoList"></div>
+        </el-tab-pane>
+
+        <el-tab-pane label="聊天记录" name="chat">
+            <div>
+                <input id="filter">
+                <button onclick="filterChat()">搜索</button>
+            </div>
+            <el-table
+                    :data="chatTableData"
+                    style="width: 100%">
+                <el-table-column
+                        prop="type"
+                        label="名称"
+                        width="180">
+                    <template slot-scope="scope">
+                        {{ scope.row.attributes.user }}
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="address"
+                        label="内容">
+                    <template slot-scope="scope">
+                        {{ scope.row.attributes.content }}
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div id="chatInfoList"></div>
+        </el-tab-pane>
+    </el-tabs>
+</div>
+
+
+<!-- import Vue before Element -->
+<script src="./vue.js"></script>
+<!-- import JavaScript -->
+<script src="./element-ui.js"></script>
+<script src="./vue-resource.js"></script>
+<script>
+
+    var Rooms = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                username: '',
+                password: '',
+
+                roomName: getQueryVariable("name"),
+                activeName: 'group',
+                dialogVisible: false,
+                fileTableData:  [],
+                chatTableData:  []
+            }
+        },
+        mounted:function () {
+            this.$http.get('./leancloud.json').then(function(res){
+                console.log(res.body)
+                var APP_ID = res.body.appId;
+                var APP_KEY = res.body.appKey;
+
+                AV.init({
+                    appId: APP_ID,
+                    appKey: APP_KEY
+                });
+                checkLogin(this)
+            })
+        },
+        methods: {
+            handleClick: function (tab, event) {
+                if (tab.label === "文件列表") {
+                    getFileInfo()
+                }
+                if (tab.label === "聊天记录") {
+                    getChatInfo();
+                }
+            },
+            logout:function () {
+                AV.User.logOut();
+                checkLogin(this)
+            },
+            login: function (username, password) {
+                var self = this
+
+                AV.User.logIn(username, password).then(function (loginedUser) {
+                    getFileInfo()
+                    self.dialogVisible = false;
+                }, function (error) {
+                    self.$message({
+                        showClose: true,
+                        message: '请检查输入信息',
+                        type: 'error'
+                    });
+                });
+            }
+        }
+    })
+
+    function checkLogin(self) {
+        var currentUser = AV.User.current();
+        if (currentUser) {
+
+        } else {
+            //currentUser 为空时，可打开用户注册界面…
+            // window.location.href = '/login';
+            self.dialogVisible = true;
+        }
+    }
+
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            if (pair[0] == variable) {
+                return decodeURI(pair[1]);
+            }
+        }
+        return (false);
+    }
+
+
+    function getFileInfo() {
+        var attachment = new AV.Query('Attachment');
+        attachment.equalTo('group', getQueryVariable("name"));
+        attachment.include('file')
+        attachment.find().then(function (results) {
+            if (results.length !== 0) {
+                Rooms.$data.fileTableData = results
+            }
+
+        }, function (error) {
+        });
+    }
+
+
+    function getChatInfo() {
+        var chat = new AV.Query('Chat');
+
+        chat.equalTo('group', getQueryVariable("name"));
+        chat.find().then(function (todo) {
+            console.log(todo)
+            Rooms.$data.chatTableData = todo;
+        }, function (error) {
+            // 异常处理
+        });
+    }
+
+
+    function filterChat() {
+        var chat = new AV.Query('Chat');
+        console.log(document.getElementById("filter").value)
+        chat.equalTo('group', getQueryVariable("name"));
+        chat.contains('content', document.getElementById("filter").value);
+        chat.find().then(function (todo) {
+            Rooms.$data.chatTableData = todo;
+        }, function (error) {
+            // 异常处理
+        })
+    }
+
+</script>
+</body>
+</html>

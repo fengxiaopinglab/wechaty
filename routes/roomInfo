@@ -1,0 +1,40 @@
+var AV = require('leanengine');
+
+var Attachment = AV.Object.extend('Attachment');
+var Chat = AV.Object.extend('Chat');
+
+
+
+module.exports = {
+    attachment: function (req, res) {
+        var attachment = new AV.Query('Attachment');
+        attachment.equalTo('group', req.body.room);
+        attachment.include('file')
+        attachment.find().then(function (results) {
+            if (results.length !== 0) {
+                res.send(results)
+            }
+
+        }, function (error) {
+        });
+    },
+    chat: function (req, res) {
+        var chat = new AV.Query('Chat');
+        chat.equalTo('group', req.body.room);
+        chat.find().then(function (todo) {
+            res.send(todo);
+        }, function (error) {
+            // 异常处理
+        });
+    },
+    findChat: function (req, res) {
+        var chat = new AV.Query('Chat');
+        chat.equalTo('group', req.body.room);
+        chat.contains('content', req.body.value);
+        chat.find().then(function (todo) {
+            res.send(todo);
+        }, function (error) {
+            // 异常处理
+        })
+    }
+}
